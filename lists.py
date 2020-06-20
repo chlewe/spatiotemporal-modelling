@@ -15,6 +15,9 @@ Particle1D = collections.namedtuple("Particle", ["x", "strength"])
 Particle2D = collections.namedtuple("Particle", ["x", "y", "strength"])
 CellIndex1D = collections.namedtuple("CellIndex2D", ["x"])
 CellIndex2D = collections.namedtuple("CellIndex2D", ["x", "y"])
+Environment = collections.namedtuple("Environment", ["D", "domain_lower_bound", "domain_upper_bound",
+                                                     "particle_number_per_dim", "h", "epsilon", "volume_p", "cutoff",
+                                                     "cell_side", "t_max", "dt"])
 
 
 class CellList:

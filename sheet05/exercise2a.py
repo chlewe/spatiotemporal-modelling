@@ -4,7 +4,7 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(os.curdir)))
 
-from utils import *
+from lists import *
 
 # Exercise 2a)
 if __name__ == "__main__":

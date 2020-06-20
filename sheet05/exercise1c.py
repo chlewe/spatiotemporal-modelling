@@ -5,7 +5,7 @@ import random
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(os.curdir)))
 
-from utils import *
+from lists import *
 
 # Exercise 1c)
 if __name__ == "__main__":
