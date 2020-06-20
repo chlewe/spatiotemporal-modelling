@@ -50,7 +50,7 @@ def initial_particles():
             x = i * h
             y = j * h
             mass = volume_p * u0(x, y)
-            _particles.append(Particle(x, y, mass))
+            _particles.append(Particle2D(x, y, mass))
             _particle_pos.append((x, y))
 
     return _particles, _particle_pos
@@ -103,9 +103,8 @@ def inner_square_outer_boundary():
     return inner_indices, outer_index_pairs
 
 
-def update_strength(p: Particle, neighbours: List[int], _particles: List[Particle]):
+def update_strength_2d(p: Particle2D, neighbours: List[int], _particles: List[Particle2D]):
     summed_interaction = 0
-    # for j in range(0, len(particles)):
     for j in neighbours:
         q = _particles[j]
         strength_difference = q.strength - p.strength
@@ -116,24 +115,24 @@ def update_strength(p: Particle, neighbours: List[int], _particles: List[Particl
     return p.strength + delta_strength_p * dt
 
 
-def pse_operator(_particles: List[Particle], _verlet: VerletList2D):
+def pse_operator_2d(_particles: List[Particle2D], _verlet: VerletList):
     inner_square, outer_index_pairs = inner_square_outer_boundary()
     _particle_evolution = [_particles]
 
     for t in np.arange(0, t_max, dt):
-        updated_particles: List[Particle] = [None for p in _particles]
+        updated_particles: List[Particle2D] = [None for p in _particles]
 
         # Inner square interaction (normal PSE)
         for i in inner_square:
             p = _particles[i]
-            updated_mass = update_strength(p, _verlet.cells[i], _particles)
-            updated_particles[i] = Particle(p.x, p.y, updated_mass)
+            updated_mass = update_strength_2d(p, _verlet.cells[i], _particles)
+            updated_particles[i] = Particle2D(p.x, p.y, updated_mass)
 
         # Outer boundary interaction (copying from inner square)
         for i in outer_index_pairs:
             p = _particles[i]
             copy_index = outer_index_pairs[i]
-            updated_particles[i] = Particle(p.x, p.y, updated_particles[copy_index].strength)
+            updated_particles[i] = Particle2D(p.x, p.y, updated_particles[copy_index].strength)
 
         _particles = updated_particles
         if (t_max * 1 / 3) <= t < (t_max * 1 / 3) + dt or \
@@ -144,7 +143,7 @@ def pse_operator(_particles: List[Particle], _verlet: VerletList2D):
     return _particle_evolution
 
 
-def predict_u_pse(_particles: List[Particle]):
+def pse_predict_u_2d(_particles: List[Particle2D]):
     _x_coords = []
     _y_coords = []
     _concentration = []
@@ -160,9 +159,9 @@ def predict_u_pse(_particles: List[Particle]):
 if __name__ == "__main__":
     particles, particle_pos = initial_particles()
     cells = CellList2D(particle_pos, domain_lower_bound, domain_upper_bound, cell_side)
-    verlet = VerletList2D(particle_pos, cells, cutoff)
+    verlet = VerletList(particle_pos, cells, cutoff)
 
-    particle_evolution = pse_operator(particles, verlet)
+    particle_evolution = pse_operator_2d(particles, verlet)
     fig = plt.figure()
 
     #######################################
@@ -180,7 +179,7 @@ if __name__ == "__main__":
     #######################################
     x_evo, y_evo, u_evo = [], [], []
     for step in particle_evolution:
-        x_coords, y_coords, concentration = predict_u_pse(step)
+        x_coords, y_coords, concentration = pse_predict_u_2d(step)
         x_evo.append(x_coords)
         y_evo.append(y_coords)
         u_evo.append(concentration)
