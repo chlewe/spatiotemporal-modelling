@@ -5,131 +5,131 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(os.curdir)))
 
-from utils import CellList, VerletList
+from utils import *
 
-domain_bound = 4
-diffusion_coefficient = 0.0001
-time_step = 0.1
-integration_time = 10
+D = 0.0001
+domain_lower_bound = -4
+domain_upper_bound = 4
+normal_particle_number = 50  # plus the same number of mirrored particles
+h = (domain_upper_bound - domain_lower_bound) / (normal_particle_number * 2 - 1)
+epsilon = h
+volume_p = h
+cutoff = 3 * epsilon
+cell_side = cutoff
+t_max = 10
+dt = 0.1
+
 
 def u0(x):
-    return 0 if x < 0 else x * math.exp(-x**2)
+    return 0 if x < 0 else x * math.exp(-x ** 2)
+
 
 def u_exact(x, t):
-    return x / ((1 + 4 * diffusion_coefficient * t) ** (3/2)) * math.exp(-x**2 / 1 + 4 * diffusion_coefficient * t)
-
-def initial_particles(particle_number):
-    interparticle_spacing = 2 * domain_bound / (2 * particle_number - 1)
-    volume_p = interparticle_spacing
-    print(interparticle_spacing)
-
-    # create normal particles (0,4] and mirrored particles [-4,0)
-    particles = []
-    for i in range(0, particle_number * 2):
-        x_p = (i - particle_number + 0.5) * interparticle_spacing
-        value_p = volume_p * u0(x_p)
-        particles.append((x_p, value_p))
-
-    return particles
+    return x / ((1 + 4 * D * t) ** (3/2)) * math.exp(-x**2 / 1 + 4 * D * t)
 
 
-#
-# Random walk
-#
-def random_walk(particle_number):
-    particles = initial_particles(particle_number)
+# Gaussian kernel
+def kernel_e(p: Particle1D, q: Particle1D):
+    dist_x = q.x - p.x
+    return 1 / (2 * epsilon * math.sqrt(math.pi)) * math.exp(-dist_x ** 2 / (4 * epsilon ** 2))
 
+
+# Alternative, polynomial kernel
+def kernel_e_poly(p: Particle1D, q: Particle1D):
+    dist_x = q.x - p.x
+    return 1 / h * 15 / math.pi ** 2 / (abs(dist_x / h) ** 10 + 1)
+
+
+# create normal particles (0,4] and mirrored particles [-4,0)
+def initial_particles():
+    _particles = []
+    _particle_pos = []
+
+    for i in range(0, normal_particle_number * 2):
+        x = (i - normal_particle_number + 0.5) * h
+        mass = volume_p * u0(x)
+        _particles.append(Particle1D(x, mass))
+        _particle_pos.append((x, ))
+
+    return _particles, _particle_pos
+
+
+#######################################
+# Random walk (RW)
+#######################################
+def rw_operator_1d(_particles: List[Particle1D]):
     d_mean = 0
-    d_variance = (2 * diffusion_coefficient * time_step)
+    d_variance = (2 * D * dt)
 
-    for _ in np.arange(0, integration_time, time_step):
+    for _ in np.arange(0, t_max, dt):
         updated_particles = []
-        for p in particles:
+        for p in _particles:
             dx = np.random.normal(loc=d_mean, scale=d_variance)
-            updated_x_p = p[0] + dx
-            constant_value_p = p[1]
-            updated_particles.append((updated_x_p, constant_value_p))
+            updated_x = p.x + dx
+            updated_particles.append(Particle1D(updated_x, p.strength))
 
-        particles = updated_particles
+        _particles = updated_particles
 
-    return particles
-
-#
-# Particle Strength Exchange
-#
-def pse(particle_number):
-    interparticle_spacing = 2 * domain_bound / (2 * particle_number - 1)
-    kernel_size = interparticle_spacing
-    volume_p = interparticle_spacing
-
-    particles = initial_particles(particle_number)
-    particle_pos = list(map(lambda x: (x,), np.array(particles)[:,0]))
-    cells = CellList(particle_pos, -domain_bound, domain_bound, kernel_size)
-    verlet = VerletList(particle_pos, cells, kernel_size)
-
-    def kernel_e(x):
-        return 1 / (2 * kernel_size * math.sqrt(math.pi)) * math.exp(-x**2 / (4 * kernel_size**2))
-
-    #def kernel_e(x):
-    #    return 1 / kernel_size * 15 / math.pi**2 / (abs(x / kernel_size)**10 + 1)
-
-    for _ in np.arange(0, integration_time, time_step):
-        updated_particles = []
-        for (i, p) in enumerate(particles):
-        #for p in particles:
-            summed_exchange = 0
-            for j in verlet.cells[i]:
-            #for q in particles:
-                q = particles[j]
-                summed_exchange += (q[1] - p[1]) * kernel_e(q[0] - p[0])
-
-            constant_x_p = p[0]
-            delta_value_p = volume_p * diffusion_coefficient / (kernel_size**2) * summed_exchange
-            updated_particles.append((constant_x_p, p[1] + delta_value_p))
-
-        particles = updated_particles
-
-    return particles
+    return _particles
 
 
-#
-# Evaluation
-#
-def predict_u_rw(particles):
+def rw_predict_u_1d(_particles: List[Particle1D], start_x: float, end_x: float):
     bins = 16
-    bin_width = domain_bound / bins
-    bin_u = []
-    bin_edges = [i * bin_width for i in range(0, bins + 1)]
-    current_bin = 0
-    current_bin_values = []
+    bin_width = (end_x - start_x) / bins
+    bin_concentration = []
+    bin_edges = [start_x + i * bin_width for i in range(0, bins + 1)]
 
     for i in range(0, bins):
-        bin_particles = list(filter(lambda p: bin_edges[i] < p[0] and p[0] <= bin_edges[i + 1], particles))
+        bin_particles = list(filter(lambda p: bin_edges[i] < p[0] <= bin_edges[i + 1], _particles))
         if not bin_particles:
-            print(i)
-            bin_u.append(0)
+            bin_concentration.append(0)
         else:
-            bin_u.append(sum(map(lambda p: p[1], bin_particles)) / bin_width)
+            bin_concentration.append(sum(map(lambda p: p[1], bin_particles)) / bin_width)
 
     bin_centroids = [(bin_edges[i] + bin_edges[i + 1]) / 2 for i in range(0, bins)]
+    return bin_centroids, bin_concentration
 
-    return bin_centroids, bin_u
 
-def predict_u_pse(particles):
-    particle_number = len(particles) // 2
-    interparticle_spacing = 2 * domain_bound / (2 * particle_number - 1)
-    volume_p = interparticle_spacing
-    positions = []
-    u = []
+#######################################
+# Particle Strength Exchange (PSE)
+#######################################
+def update_strength(p, neighbours, _particles, _kernel_e):
+    summed_interaction = 0
+    for j in neighbours:
+        q = _particles[j]
+        strength_difference = q.strength - p.strength
+        kernel_value = _kernel_e(p, q)
+        summed_interaction += strength_difference * kernel_value
 
-    for p in filter(lambda p: 0 <= p[0], particles):
-        positions.append(p[0])
-        u.append(p[1] / volume_p)
+    delta_strength_p = volume_p * D / (epsilon ** 2) * summed_interaction
+    return p.strength + delta_strength_p * dt
 
-    return positions, u
 
-## Returns predicted concentrations, exact concentrations, l2 norm and linf norm
-#def evaluate(particles):
+def pse_operator_1d(_particles: List[Particle1D], _verlet: VerletList):
+    for _ in np.arange(0, t_max, dt):
+        updated_particles = []
+        for (i, p) in enumerate(_particles):
+            updated_mass = update_strength(p, _verlet.cells[i], _particles, kernel_e)
+            updated_particles.append(Particle1D(p.x, updated_mass))
+
+        _particles = updated_particles
+
+    return particles
+
+
+def pse_predict_u_1d(_particles: List[Particle1D], start_x, end_x):
+    _x_coords = []
+    _concentration = []
+
+    for p in filter(lambda _p: start_x <= _p.x <= end_x, _particles):
+        _x_coords.append(p.x)
+        _concentration.append(p.strength / volume_p)
+
+    return _x_coords, _concentration
+
+
+# Returns predicted concentrations, exact concentrations, l2 norm and linf norm
+# def evaluate(particles):
 #    error = []
 #    positions = []
 #    prediction = []
@@ -151,47 +151,50 @@ def predict_u_pse(particles):
 #    return positions, prediction, exact, l2_norm, linf_norm
 
 
-N = []
-l2_RW = []
-l2_PSE = []
-linf_RW = []
-linf_PSE = []
-fig, ax = plt.subplots(figsize=(10,10))
+if __name__ == "__main__":
+    particles, particle_pos = initial_particles()
+    cells = CellList1D(particle_pos, domain_lower_bound, domain_upper_bound, cell_side)
+    verlet = VerletList(particle_pos, cells, cutoff)
 
-#
-# Concentration plot
-#
-particles = random_walk(400)
-positions, prediction = predict_u_rw(particles)
-ax.scatter(positions, prediction, label="RW: Predicted concentration")
+    rw_particles = rw_operator_1d(particles)
+    pse_particles = pse_operator_1d(particles, verlet)
+    rw_x, rw_u = rw_predict_u_1d(rw_particles, 0, domain_upper_bound)
+    pse_x, pse_u = pse_predict_u_1d(pse_particles, 0, domain_upper_bound)
+    fine_x = np.arange(0, 4, 0.01)
+    exact_u = [u_exact(x, t_max) for x in fine_x]
 
-particles = pse(400)
-positions, prediction = predict_u_pse(particles)
-ax.scatter(positions, prediction, label="PSE: Predicted concentration")
+    #######################################
+    # Concentration plot
+    #######################################
+    fig, ax = plt.subplots(figsize=(10, 10))
+    ax.scatter(rw_x, rw_u, label="RW: Predicted concentration")
+    ax.scatter(pse_x, pse_u, label="PSE: Predicted concentration")
+    ax.plot(fine_x, exact_u, label="Exact concentration")
+    plt.legend()
+    plt.show()
 
-fine_positions = np.arange(0, 4, 0.01)
-exact = [u_exact(x, integration_time) for x in fine_positions]
-ax.plot(fine_positions, exact, label="Exact concentration")
+    #######################################
+    # Convergence plot
+    #######################################
+    # N = []
+    # l2_RW = []
+    # l2_PSE = []
+    # linf_RW = []
+    # linf_PSE = []
 
-##
-## Convergence plot
-##
-#for particle_number in [50, 100, 200, 400, 800]:
-#    N.append(particle_number)
-#
-#    particles = random_walk(particle_number)
-#    _, _, _, l2_norm, linf_norm = evaluate(particles)
-#    l2_RW.append(l2_norm)
-#    linf_RW.append(linf_norm)
-#
-#    #particles = pse(particle_number)
-#    #_, _, _, l2_norm, linf_norm = evaluate(particles)
-#    #l2_PSE.append(l2_norm)
-#    #linf_PSE.append(linf_norm)
-#ax.plot(N, l2_RW, label="RW: L2 norm")
-#ax.plot(N, linf_RW, label="RW: Linf norm")
-##ax.plot(N, l2_PSE, label="PSE: L2 norm")
-##ax.plot(N, linf_PSE, label="PSE: Linf norm")
-
-plt.legend()
-plt.show()
+    # for particle_number in [50, 100, 200, 400, 800]:
+    #    N.append(particle_number)
+    #
+    #    particles = random_walk(particle_number)
+    #    _, _, _, l2_norm, linf_norm = evaluate(particles)
+    #    l2_RW.append(l2_norm)
+    #    linf_RW.append(linf_norm)
+    #
+    #    #particles = pse(particle_number)
+    #    #_, _, _, l2_norm, linf_norm = evaluate(particles)
+    #    #l2_PSE.append(l2_norm)
+    #    #linf_PSE.append(linf_norm)
+    # ax.plot(N, l2_RW, label="RW: L2 norm")
+    # ax.plot(N, linf_RW, label="RW: Linf norm")
+    # ax.plot(N, l2_PSE, label="PSE: L2 norm")
+    # ax.plot(N, linf_PSE, label="PSE: Linf norm")
