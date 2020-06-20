@@ -4,7 +4,7 @@ from lists import *
 from typing import List
 
 
-def rw_operator_1d(_particles: List[Particle1D], env: Environment):
+def rw_operator_1d(_particles: List[Particle1D1], env: Environment):
     d_mean = 0
     d_variance = (2 * env.D * env.dt)
 
@@ -13,14 +13,14 @@ def rw_operator_1d(_particles: List[Particle1D], env: Environment):
         for p in _particles:
             dx = np.random.normal(loc=d_mean, scale=d_variance)
             updated_x = p.x + dx
-            updated_particles.append(Particle1D(updated_x, p.strength))
+            updated_particles.append(Particle1D1(updated_x, p.strength0))
 
         _particles = updated_particles
 
     return _particles
 
 
-def rw_predict_u_1d(_particles: List[Particle1D], start_x: float, end_x: float):
+def rw_predict_u_1d(_particles: List[Particle1D1], start_x: float, end_x: float):
     bins = 16
     bin_width = (end_x - start_x) / bins
     bin_concentration = []

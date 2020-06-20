@@ -50,7 +50,7 @@ def initial_particles():
     for i in range(0, normal_particle_number * 2):
         x = (i - normal_particle_number + 0.5) * h
         mass = volume_p * u0(x)
-        _particles.append(Particle1D(x, mass))
+        _particles.append(Particle1D1(x, mass))
         _particle_pos.append((x, ))
 
     return _particles, _particle_pos

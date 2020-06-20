@@ -50,7 +50,7 @@ def initial_particles():
             x = i * h
             y = j * h
             mass = volume_p * u0(x, y)
-            _particles.append(Particle2D(x, y, mass))
+            _particles.append(Particle2D1(x, y, mass))
             _particle_pos.append((x, y))
 
     return _particles, _particle_pos
@@ -62,11 +62,11 @@ if __name__ == "__main__":
     verlet = VerletList(particle_pos, cells, cutoff)
 
     particle_evolution = pse_operator_2d(particles, verlet, kernel_e, env)
-    fig = plt.figure()
 
     #######################################
     # Single plot
     #######################################
+    # fig = plt.figure()
     # x_coords, y_coords, concentration = predict_u_pse(particle_evolution[-1])
 
     # ax = plt.axes(projection='3d')
@@ -77,9 +77,10 @@ if __name__ == "__main__":
     #######################################
     # 4-in-1 plot
     #######################################
+    fig = plt.figure()
     x_evo, y_evo, u_evo = [], [], []
     for step in particle_evolution:
-        x_coords, y_coords, concentration = pse_predict_u_2d(step, env)
+        x_coords, y_coords, concentration = pse_predict_u_2d(step, 0, env)
         x_evo.append(x_coords)
         y_evo.append(y_coords)
         u_evo.append(concentration)

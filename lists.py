@@ -11,8 +11,11 @@ def distance(pos1, pos2):
     return math.sqrt(squared_distance)
 
 
-Particle1D = collections.namedtuple("Particle", ["x", "strength"])
-Particle2D = collections.namedtuple("Particle", ["x", "y", "strength"])
+Particle1D = collections.namedtuple("Particle", ["x"])  # Wrapper
+Particle2D = collections.namedtuple("Particle", ["x", "y"])  # Wrapper
+Particle1D1 = collections.namedtuple("Particle", ["x", "strength0"])
+Particle2D1 = collections.namedtuple("Particle", ["x", "y", "strength0"])
+Particle2D2 = collections.namedtuple("Particle", ["x", "y", "strength0", "strength1"])
 CellIndex1D = collections.namedtuple("CellIndex2D", ["x"])
 CellIndex2D = collections.namedtuple("CellIndex2D", ["x", "y"])
 Environment = collections.namedtuple("Environment", ["D", "domain_lower_bound", "domain_upper_bound",

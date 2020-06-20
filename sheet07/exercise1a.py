@@ -5,7 +5,7 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(os.curdir)))
 
-from lists import *
+from typing import List
 
 t_max = 20
 dt = 0.01

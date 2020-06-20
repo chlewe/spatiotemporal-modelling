@@ -8,20 +8,20 @@ def update_strength(p, neighbours, _particles, _kernel_e, env: Environment):
     summed_interaction = 0
     for j in neighbours:
         q = _particles[j]
-        strength_difference = q.strength - p.strength
+        strength_difference = q.strength0 - p.strength0
         kernel_value = _kernel_e(p, q)
         summed_interaction += strength_difference * kernel_value
 
     delta_strength_p = env.volume_p * env.D / (env.epsilon ** 2) * summed_interaction
-    return p.strength + delta_strength_p * env.dt
+    return p.strength0 + delta_strength_p * env.dt
 
 
-def pse_operator_1d(_particles: List[Particle1D], _verlet: VerletList, _kernel_e, env: Environment):
+def pse_operator_1d(_particles: List[Particle1D1], _verlet: VerletList, _kernel_e, env: Environment):
     for _ in np.arange(0, env.t_max, env.dt):
         updated_particles = []
         for (i, p) in enumerate(_particles):
             updated_mass = update_strength(p, _verlet.cells[i], _particles, _kernel_e, env)
-            updated_particles.append(Particle1D(p.x, updated_mass))
+            updated_particles.append(Particle1D1(p.x, updated_mass))
 
         _particles = updated_particles
 
@@ -75,24 +75,24 @@ def inner_square_outer_boundary(env: Environment):
     return inner_indices, outer_index_pairs
 
 
-def pse_operator_2d(_particles: List[Particle2D], _verlet: VerletList, _kernel_e, env: Environment):
+def pse_operator_2d(_particles: List[Particle2D1], _verlet: VerletList, _kernel_e, env: Environment):
     inner_square, outer_index_pairs = inner_square_outer_boundary(env)
     _particle_evolution = [_particles]
 
     for t in np.arange(0, env.t_max, env.dt):
-        updated_particles: List[Particle2D] = [None for _ in _particles]
+        updated_particles: List[Particle2D1] = [None for _ in _particles]
 
         # Inner square interaction (normal PSE)
         for i in inner_square:
             p = _particles[i]
             updated_mass = update_strength(p, _verlet.cells[i], _particles, _kernel_e, env)
-            updated_particles[i] = Particle2D(p.x, p.y, updated_mass)
+            updated_particles[i] = Particle2D1(p.x, p.y, updated_mass)
 
         # Outer boundary interaction (copying from inner square)
         for i in outer_index_pairs:
             p = _particles[i]
             copy_index = outer_index_pairs[i]
-            updated_particles[i] = Particle2D(p.x, p.y, updated_particles[copy_index].strength)
+            updated_particles[i] = Particle2D1(p.x, p.y, updated_particles[copy_index].strength0)
 
         _particles = updated_particles
         if (env.t_max * 1 / 3) <= t < (env.t_max * 1 / 3) + env.dt or \
@@ -103,25 +103,26 @@ def pse_operator_2d(_particles: List[Particle2D], _verlet: VerletList, _kernel_e
     return _particle_evolution
 
 
-def pse_predict_u_1d(_particles: List[Particle1D], start_x, end_x, env: Environment):
+def pse_predict_u_1d(_particles: List[Particle1D1], start_x, end_x, env: Environment):
     _x_coords = []
     _concentration = []
 
     for p in filter(lambda _p: start_x <= _p.x <= end_x, _particles):
         _x_coords.append(p.x)
-        _concentration.append(p.strength / env.volume_p)
+        _concentration.append(p.strength0 / env.volume_p)
 
     return _x_coords, _concentration
 
 
-def pse_predict_u_2d(_particles: List[Particle2D], env: Environment):
+def pse_predict_u_2d(_particles: List[Particle2D], dimension: int, env: Environment):
     _x_coords = []
     _y_coords = []
     _concentration = []
+    dimension_index = 2 + dimension
 
     for p in _particles:
         _x_coords.append(p.x)
         _y_coords.append(p.y)
-        _concentration.append(p.strength / env.volume_p)
+        _concentration.append(p[dimension_index] / env.volume_p)
 
     return _x_coords, _y_coords, _concentration
