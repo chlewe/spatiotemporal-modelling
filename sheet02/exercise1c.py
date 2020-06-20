@@ -7,6 +7,7 @@ c_2 = 1
 x_T = 2 * 10 ** 5
 x_0 = 0.8 * 10 ** 5
 
+
 def euler(x_0, step_size, total_steps, f):
     x = [x_0]
     t = [0]
@@ -22,17 +23,20 @@ def f_isomer(t, x_t):
     global c_1, c_2, x_T, x_0
     return -c_1 * x_t + c_2 * (x_T - x_t)
 
+
 def f_euler(t, x):
     return x
 
-#x, t = euler(x_0, 1.0, 4, f_euler)
-#plt.plot(t, x)
 
-t_max = 10
+if __name__ == "__main__":
+    # x, t = euler(x_0, 1.0, 4, f_euler)
+    # plt.plot(t, x)
 
-for step_size in np.arange(0.25, 1.5, 0.25):
-    x, t = euler(x_0, step_size, int(t_max / step_size), f_isomer)
-    plt.plot(t, x, label="{}".format(step_size))
+    t_max = 10
 
-plt.legend()
-plt.show()
+    for step_size in np.arange(0.25, 1.5, 0.25):
+        x, t = euler(x_0, step_size, int(t_max / step_size), f_isomer)
+        plt.plot(t, x, label="{}".format(step_size))
+
+    plt.legend()
+    plt.show()

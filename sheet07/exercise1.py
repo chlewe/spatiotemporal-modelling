@@ -10,6 +10,7 @@ from utils import *
 end_time = 20
 time_step = 0.01
 
+
 def apply_brusselator(particles_u, particles_v, a, b, k):
     particles_du = []
     particles_dv = []
@@ -26,27 +27,28 @@ def apply_brusselator(particles_u, particles_v, a, b, k):
     return particles_du, particles_dv
 
 
-a, b, k = 2, 6, 1
-U, V, T = [], [], []
+if __name__ == "__main__":
+    a, b, k = 2, 6, 1
+    U, V, T = [], [], []
 
-# oscillating setting
-particles_u, particles_v = [0.7], [0.04]
-## fixed point setting
-#particles_u, particles_v = [a], [b / a]
+    # oscillating setting
+    particles_u, particles_v = [0.7], [0.04]
+    # fixed-point setting
+    # particles_u, particles_v = [a], [b / a]
 
-for t in np.arange(0, end_time, time_step):
-    U.append(particles_u[0])
-    V.append(particles_v[0])
-    T.append(t)
+    for t in np.arange(0, end_time, time_step):
+        U.append(particles_u[0])
+        V.append(particles_v[0])
+        T.append(t)
 
-    particles_du, particles_dv = apply_brusselator(particles_u, particles_v, a, b, k)
-    particles_u = [particles_u[0] + particles_du[0]]
-    particles_v = [particles_v[0] + particles_dv[0]]
+        particles_du, particles_dv = apply_brusselator(particles_u, particles_v, a, b, k)
+        particles_u = [particles_u[0] + particles_du[0]]
+        particles_v = [particles_v[0] + particles_dv[0]]
 
-fig, ax = plt.subplots(figsize=(10,10))
-ax.plot(T, U, label="u")
-ax.plot(T, V, label="v")
-ax.set_xlabel("t")
-ax.set_ylabel("concentration")
-plt.legend()
-plt.show()
+    fig, ax = plt.subplots(figsize=(10,10))
+    ax.plot(T, U, label="u")
+    ax.plot(T, V, label="v")
+    ax.set_xlabel("t")
+    ax.set_ylabel("concentration")
+    plt.legend()
+    plt.show()
