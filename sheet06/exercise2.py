@@ -5,6 +5,7 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(os.curdir)))
 
+from evaluation import *
 from pse import *
 
 D = 2
@@ -61,7 +62,7 @@ if __name__ == "__main__":
     cells = CellList2D(particle_pos, domain_lower_bound, domain_upper_bound, cell_side)
     verlet = VerletList(particle_pos, cells, cutoff)
 
-    particle_evolution = pse_operator_2d(particles, verlet, kernel_e, env)
+    particle_evolution = pse_operator_2d(particles, verlet, env, kernel_e)
 
     #######################################
     # Single plot
@@ -77,32 +78,11 @@ if __name__ == "__main__":
     #######################################
     # 4-in-1 plot
     #######################################
-    fig = plt.figure()
-    x_evo, y_evo, u_evo = [], [], []
+    xy_concentration = []
     for step in particle_evolution:
         x_coords, y_coords, concentration = pse_predict_u_2d(step, 0, env)
-        x_evo.append(x_coords)
-        y_evo.append(y_coords)
-        u_evo.append(concentration)
+        xy_concentration.append((x_coords, y_coords, concentration))
 
-    # First subplot
-    ax0 = fig.add_subplot(2, 2, 1, projection='3d')
-    surf0 = ax0.plot_trisurf(x_evo[0], y_evo[0], u_evo[0], cmap="jet", linewidth=0.1)
-    fig.colorbar(surf0, shrink=0.5, aspect=5)
-
-    # Second subplot
-    ax1 = fig.add_subplot(2, 2, 2, projection='3d', sharex=ax0, sharey=ax0)
-    surf1 = ax1.plot_trisurf(x_evo[1], y_evo[1], u_evo[1], cmap="jet", linewidth=0.1)
-    fig.colorbar(surf1, shrink=0.5, aspect=5)
-
-    # Third subplot
-    ax2 = fig.add_subplot(2, 2, 3, projection='3d', sharex=ax0, sharey=ax0)
-    surf2 = ax2.plot_trisurf(x_evo[2], y_evo[2], u_evo[2], cmap="jet", linewidth=0.1)
-    fig.colorbar(surf2, shrink=0.5, aspect=5)
-
-    # Fourth subplot
-    ax3 = fig.add_subplot(2, 2, 4, projection='3d', sharex=ax0, sharey=ax0)
-    surf3 = ax3.plot_trisurf(x_evo[3], y_evo[3], u_evo[3], cmap="jet", linewidth=0.1)
-    fig.colorbar(surf3, shrink=0.5, aspect=5)
-
+    fig = plot_nxm(xy_concentration, 2, 2,
+                   zlabels=("u", "u", "u", "u"), titles=("t=0", "t=1/3t_max", "t=2/3t_max", "t=t_max"))
     plt.show()
