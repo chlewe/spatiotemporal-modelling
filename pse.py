@@ -52,8 +52,10 @@ def inner_square_outer_boundary(env: Environment)\
     return inner_indices, outer_index_pairs
 
 
-def update_strengths(p, neighbours, _particles, env: Environment, _kernel_e, _reaction=None)\
-        -> List[float]:
+# FIXME: only works for 2D
+def update_particle_2d(i: int, neighbours, _particles, env: Environment, _kernel_e, _reaction=None)\
+        -> Tuple[float, float, List[float]]:
+    p = _particles[i]
     num_strengths = len(p) - 2
     summed_interaction = [0 for _ in range(0, num_strengths)]
 
@@ -78,23 +80,25 @@ def update_strengths(p, neighbours, _particles, env: Environment, _kernel_e, _re
         d_strength_i = d_strength_i_diff + d_strengths_reac[strength_i]
         updated_strengths.append(p[strength_i + 2] + d_strength_i * env.dt)
 
-    return updated_strengths
+    return p.x, p.y, updated_strengths
 
 
+# FIXME: Currently broken due to `update_particle_2d`
 def pse_operator_1d(_particles: List[Particle1D1], _verlet: VerletList, _kernel_e, env: Environment)\
         -> List[Particle1D]:
     for _ in np.arange(0, env.t_max, env.dt):
         updated_particles = []
         for (i, p) in enumerate(_particles):
-            updated_strengths = update_strengths(p, _verlet.cells[i], _particles, env, _kernel_e)
-            updated_particles.append(create_particle_2d(p.x, p.y, updated_strengths))
+            x, y, updated_strengths = update_particle_2d(i, _verlet.cells[i], _particles, env, _kernel_e)
+            updated_particles.append(create_particle_1d(p.x, updated_strengths))
 
         _particles = updated_particles
 
     return _particles
 
 
-def pse_operator_2d(_particles: List[Particle2D], _verlet: VerletList, env: Environment, _kernel_e, _reaction=None)\
+def pse_operator_2d(_particles: List[Particle2D], _verlet: VerletList, env: Environment, _kernel_e, _reaction=None,
+                    _update_particle=update_particle_2d)\
         -> List[List[Particle2D]]:
     inner_square, outer_index_pairs = inner_square_outer_boundary(env)
     _particle_evolution = [_particles]
@@ -104,9 +108,8 @@ def pse_operator_2d(_particles: List[Particle2D], _verlet: VerletList, env: Envi
 
         # Inner square interaction (normal PSE)
         for i in inner_square:
-            p = _particles[i]
-            updated_strengths = update_strengths(p, _verlet.cells[i], _particles, env, _kernel_e, _reaction)
-            updated_particles[i] = create_particle_2d(p.x, p.y, updated_strengths)
+            x, y, updated_strengths = _update_particle(i, _verlet.cells[i], _particles, env, _kernel_e, _reaction)
+            updated_particles[i] = create_particle_2d(x, y, updated_strengths)
 
         # Outer boundary interaction (copying from inner square)
         for i in outer_index_pairs:

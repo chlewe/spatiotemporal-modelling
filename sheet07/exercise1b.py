@@ -65,7 +65,7 @@ if __name__ == "__main__":
     particle_evolution = pse_operator_2d(particles, verlet, env, kernel_e, apply_brusselator)
 
     #######################################
-    # xy-u and xy-v 4x2 plot
+    # xy-u and xy-v 4x4 plot
     #######################################
     xy_concentration = []
 

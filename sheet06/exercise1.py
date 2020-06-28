@@ -85,7 +85,7 @@ if __name__ == "__main__":
     verlet = VerletList(particle_pos, cells, cutoff)
 
     rw_particles = rw_operator_1d(particles, env)
-    pse_particles = pse_operator_1d(particles, verlet, kernel_e, env)
+    pse_particles = pse_operator_1d(particles, verlet, env, kernel_e)
     rw_x, rw_u = rw_predict_u_1d(rw_particles, 0, domain_upper_bound)
     pse_x, pse_u = pse_predict_u_1d(pse_particles, 0, domain_upper_bound, env)
     fine_x = np.arange(0, 4, 0.01)
