@@ -19,7 +19,7 @@ class Main(Enum):
 
 #######################################
 # Select your main method
-main = Main.FIRST_BENCHMARK
+main = Main.SECOND_BENCHMARK
 #######################################
 
 D = 1
@@ -138,15 +138,43 @@ def first_benchmark():
 
     cells = CellList2D(particle_pos, domain_lower_bound, domain_upper_bound, cell_side)
     verlet = VerletList(particle_pos, cells, cutoff)
-    particle_evolution = pse_operator_2d(particles, verlet, env, kernel_e, _update_particle=update_particle_qs)
+    particle_evolution = pse_operator_2d(particles, verlet, env, 2, kernel_e, _update_particle=update_particle_qs)
 
-    total_u_e = sum(map(lambda q: q.strength0, particle_evolution[-1]))
-    total_u_c = sum(map(lambda q: q.strength1, particle_evolution[-1]))
+    total_u_e = sum(map(lambda q: q.strength0, particle_evolution[-1][1]))
+    total_u_c = sum(map(lambda q: q.strength1, particle_evolution[-1][1]))
     print("{} (u_e) + {} (u_c) ≈ {}".format(round(total_u_e, 2), round(total_u_c, 2), round(total_u_e + total_u_c, 2)))
 
 
 def second_benchmark():
-    pass
+    global bacteria_particles
+    particles, particle_pos = initial_particles()
+    i = math.floor(len(particles) / 2)
+    middle_p = particles[i]
+    particles[i] = Particle2D2(middle_p.x, middle_p.y, 0, u_thresh * volume_p)
+    bacteria_particles = [i]
+    j = next(_j for _j in range(0, len(particles)) if
+             particles[_j].x == middle_p.x + 4 and particles[_j].y == middle_p.y)
+    bacteria_particles.append(j)
+
+    cells = CellList2D(particle_pos, domain_lower_bound, domain_upper_bound, cell_side)
+    verlet = VerletList(particle_pos, cells, cutoff)
+    particle_evolution = pse_operator_2d(particles, verlet, env, 100, kernel_e, _update_particle=update_particle_qs)
+
+    t_coords = []
+    u_e_coords = []
+    u_c_coords = []
+    for t in range(0, 100):
+        total_u_e = sum(map(lambda q: q.strength0, particle_evolution[t][1]))
+        total_u_c = sum(map(lambda q: q.strength1, particle_evolution[t][1]))
+        t_coords.append(particle_evolution[t][0])
+        u_e_coords.append(total_u_e)
+        u_c_coords.append(total_u_c)
+
+    fig, ax = plt.subplots(figsize=(10, 10))
+    ax.plot(t_coords, u_e_coords, label="total u_e")
+    ax.plot(t_coords, u_c_coords, label="total u_c")
+    plt.legend()
+    plt.show()
 
 
 if __name__ == "__main__":
@@ -157,4 +185,9 @@ if __name__ == "__main__":
     elif main == Main.SECOND_BENCHMARK:
         gamma_e = 0.05
         gamma_c = 0.05
+        t_max = 50
+        env = Environment(D, domain_lower_bound, domain_upper_bound, particle_number_per_dim, h, epsilon, volume_p,
+                          cutoff, cell_side, t_max, dt)
         second_benchmark()
+    elif main == Main.THIRD_BENCHMARK:
+        pass

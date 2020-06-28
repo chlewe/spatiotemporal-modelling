@@ -62,7 +62,7 @@ if __name__ == "__main__":
     cells = CellList2D(particle_pos, domain_lower_bound, domain_upper_bound, cell_side)
     verlet = VerletList(particle_pos, cells, cutoff)
 
-    particle_evolution = pse_operator_2d(particles, verlet, env, kernel_e, apply_brusselator)
+    particle_evolution = pse_operator_2d(particles, verlet, env, 4, kernel_e, apply_brusselator)
 
     #######################################
     # xy-u and xy-v 4x4 plot
@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
     for strength_i in range(0, 2):
         for t in range(0, 4):
-            x_coords, y_coords, concentration_i = pse_predict_u_2d(particle_evolution[t], strength_i, env)
+            x_coords, y_coords, concentration_i = pse_predict_u_2d(particle_evolution[t][1], strength_i, env)
             xy_concentration.append((x_coords, y_coords, concentration_i))
 
     fig = plot_nxm(xy_concentration, 4, 2,

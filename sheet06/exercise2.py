@@ -62,7 +62,7 @@ if __name__ == "__main__":
     cells = CellList2D(particle_pos, domain_lower_bound, domain_upper_bound, cell_side)
     verlet = VerletList(particle_pos, cells, cutoff)
 
-    particle_evolution = pse_operator_2d(particles, verlet, env, kernel_e)
+    particle_evolution = pse_operator_2d(particles, verlet, env, 4, kernel_e)
 
     #######################################
     # Single plot
@@ -79,10 +79,13 @@ if __name__ == "__main__":
     # 4-in-1 plot
     #######################################
     xy_concentration = []
-    for step in particle_evolution:
-        x_coords, y_coords, concentration = pse_predict_u_2d(step, 0, env)
+    t_coords = []
+    for t in range(0, 4):
+        x_coords, y_coords, concentration = pse_predict_u_2d(particle_evolution[t][1], 0, env)
         xy_concentration.append((x_coords, y_coords, concentration))
+        t_coords.append(round(particle_evolution[t][0], 2))
 
-    fig = plot_nxm(xy_concentration, 2, 2,
-                   zlabels=("u", "u", "u", "u"), titles=("t=0", "t=1/3t_max", "t=2/3t_max", "t=t_max"))
+    fig = plot_nxm(xy_concentration, 2, 2, zlabels=("u", "u", "u", "u"),
+                   titles=("t={}".format(t_coords[0]), "t={}".format(t_coords[1]), "t={}".format(t_coords[2]),
+                           "t={}".format(t_coords[3])))
     plt.show()

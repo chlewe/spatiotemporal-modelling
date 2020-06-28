@@ -97,13 +97,14 @@ def pse_operator_1d(_particles: List[Particle1D1], _verlet: VerletList, _kernel_
     return _particles
 
 
-def pse_operator_2d(_particles: List[Particle2D], _verlet: VerletList, env: Environment, _kernel_e, _reaction=None,
-                    _update_particle=update_particle_2d)\
-        -> List[List[Particle2D]]:
+def pse_operator_2d(_particles: List[Particle2D], _verlet: VerletList, env: Environment, n_evolutions: int,
+                    _kernel_e, _reaction=None, _update_particle=update_particle_2d)\
+        -> List[Tuple[float, List[Particle2D]]]:
     inner_square, outer_index_pairs = inner_square_outer_boundary(env)
-    _particle_evolution = [_particles]
+    _particle_evolution = [(0, _particles)]
+    dt_evolution = env.t_max if n_evolutions < 1 else env.t_max / (n_evolutions - 1)
 
-    for t in np.arange(0, env.t_max, env.dt):
+    for t in np.arange(env.dt, env.t_max + env.dt, env.dt):
         updated_particles: List[Particle2D1] = [None for _ in _particles]
 
         # Inner square interaction (normal PSE)
@@ -118,11 +119,12 @@ def pse_operator_2d(_particles: List[Particle2D], _verlet: VerletList, env: Envi
             updated_particles[i] = create_particle_2d(p.x, p.y, updated_particles[copy_index][2:])
 
         _particles = updated_particles
-        if (env.t_max * 1 / 3) <= t < (env.t_max * 1 / 3) + env.dt or \
-           (env.t_max * 2 / 3) <= t < (env.t_max * 2 / 3) + env.dt:
-            _particle_evolution.append(_particles)
+        if t % dt_evolution < env.dt:
+            _particle_evolution.append((t, _particles))
 
-    _particle_evolution.append(_particles)
+    # There are cases where the last evolution step is missed
+    if env.t_max % dt_evolution != 0:
+        _particle_evolution.append((env.t_max, _particles))
     return _particle_evolution
 
 
