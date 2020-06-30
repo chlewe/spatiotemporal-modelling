@@ -88,4 +88,4 @@ if __name__ == "__main__":
     fig = plot_nxm(xy_concentration, 2, 2, zlabels=("u", "u", "u", "u"),
                    titles=("t={}".format(t_coords[0]), "t={}".format(t_coords[1]), "t={}".format(t_coords[2]),
                            "t={}".format(t_coords[3])))
-    plt.show()
+    fig.show()

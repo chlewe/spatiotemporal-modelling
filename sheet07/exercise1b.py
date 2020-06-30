@@ -77,4 +77,4 @@ if __name__ == "__main__":
     fig = plot_nxm(xy_concentration, 4, 2,
                    zlabels=("u", "u", "u", "u", "v", "v", "v", "v"),
                    titles=("t=0", "t=1/3t_max", "t=2/3t_max", "t=t_max", "t=0", "t=1/3t_max", "t=2/3t_max", "t=t_max"))
-    plt.show()
+    fig.show()

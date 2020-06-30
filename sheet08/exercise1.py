@@ -19,7 +19,7 @@ class Main(Enum):
 
 #######################################
 # Select your main method
-main = Main.SECOND_BENCHMARK
+main = Main.THIRD_BENCHMARK
 #######################################
 
 D = 1
@@ -50,14 +50,6 @@ def f(u_c):
     return alpha + (beta * u_c ** n) / (u_thresh ** n + u_c ** n) - gamma_c * u_c
 
 
-def test_f_qs():
-    x_coords = np.arange(0, 5, 0.1)
-    y_coords = [f(u_c) for u_c in x_coords]
-    fig, ax = plt.subplots(figsize=(10, 10))
-    ax.plot(x_coords, y_coords)
-    fig.show()
-
-
 # Strength order: u_e, u_c
 def reaction_with_bacterium(_ue_uc_strengths: Tuple[float, float]) -> Tuple[float, float]:
     u_e = _ue_uc_strengths[0] / volume_p
@@ -65,7 +57,7 @@ def reaction_with_bacterium(_ue_uc_strengths: Tuple[float, float]) -> Tuple[floa
     flow_inside = d1 * u_e - d2 * u_c  # use intracellular decay rate
     du_e = -flow_inside - gamma_c * u_e
     du_c = f(u_c) + flow_inside
-    return du_e, du_c
+    return du_e * volume_p, du_c * volume_p
 
 
 def reaction_without_bacterium(_ue_uc_strengths: Tuple[float, float]) -> Tuple[float, float]:
@@ -73,7 +65,7 @@ def reaction_without_bacterium(_ue_uc_strengths: Tuple[float, float]) -> Tuple[f
     # u_c = _ue_uc_strengths[1] / volume_p
     du_e = -gamma_e * u_e  # use extracellular decay rate
     du_c = 0
-    return du_e, du_c
+    return du_e * volume_p, du_c * volume_p
 
 
 def update_particle_qs(_i: int, _neighbours, _particles, _env: Environment, _kernel_e, _reaction=None)\
@@ -128,6 +120,39 @@ def initial_particles() -> Tuple[List[Particle2D2], List[Particle2D2]]:
     return _particles, _particle_pos
 
 
+def plot_summed_ahl(_particle_evolution):
+    t_coords = []
+    u_e_coords = []
+    u_c_coords = []
+    for t in range(0, len(_particle_evolution)):
+        total_u_e = sum(map(lambda q: q.strength0, _particle_evolution[t][1]))
+        total_u_c = sum(map(lambda q: q.strength1, _particle_evolution[t][1]))
+        t_coords.append(_particle_evolution[t][0])
+        u_e_coords.append(total_u_e)
+        u_c_coords.append(total_u_c)
+
+    fig, ax = plt.subplots(figsize=(10, 10))
+    ax.plot(t_coords, u_e_coords, label="total ∫u_e")
+    ax.plot(t_coords, u_c_coords, label="total ∫u_c")
+    plt.legend()
+    return fig
+
+
+def print_activated_bacteria(_particle_evolution):
+    for i in bacteria_particles:
+        p = _particle_evolution[-1][1][i]
+        print("{} bacterium at x={} y={}"
+              .format("  ACTIVE" if p.strength1 / volume_p >= u_thresh else "inactive", p.x, p.y))
+
+
+def test_f_qs():
+    x_coords = np.arange(0, 5, 0.1)
+    y_coords = [f(u_c) for u_c in x_coords]
+    fig, ax = plt.subplots(figsize=(10, 10))
+    ax.plot(x_coords, y_coords)
+    fig.show()
+
+
 def first_benchmark():
     global bacteria_particles
     particles, particle_pos = initial_particles()
@@ -142,7 +167,7 @@ def first_benchmark():
 
     total_u_e = sum(map(lambda q: q.strength0, particle_evolution[-1][1]))
     total_u_c = sum(map(lambda q: q.strength1, particle_evolution[-1][1]))
-    print("{} (u_e) + {} (u_c) ≈ {}".format(round(total_u_e, 2), round(total_u_c, 2), round(total_u_e + total_u_c, 2)))
+    print("{} (∫u_e) + {} (∫u_c) ≈ {}".format(round(total_u_e, 2), round(total_u_c, 2), round(total_u_e + total_u_c, 2)))
 
 
 def second_benchmark():
@@ -154,27 +179,47 @@ def second_benchmark():
     bacteria_particles = [i]
     j = next(_j for _j in range(0, len(particles)) if
              particles[_j].x == middle_p.x + 4 and particles[_j].y == middle_p.y)
+    particles[j] = Particle2D2(middle_p.x + 4, middle_p.y, 0, 0)
     bacteria_particles.append(j)
 
     cells = CellList2D(particle_pos, domain_lower_bound, domain_upper_bound, cell_side)
     verlet = VerletList(particle_pos, cells, cutoff)
     particle_evolution = pse_operator_2d(particles, verlet, env, 100, kernel_e, _update_particle=update_particle_qs)
 
-    t_coords = []
-    u_e_coords = []
-    u_c_coords = []
-    for t in range(0, 100):
-        total_u_e = sum(map(lambda q: q.strength0, particle_evolution[t][1]))
-        total_u_c = sum(map(lambda q: q.strength1, particle_evolution[t][1]))
-        t_coords.append(particle_evolution[t][0])
-        u_e_coords.append(total_u_e)
-        u_c_coords.append(total_u_c)
+    print_activated_bacteria(particle_evolution)
 
-    fig, ax = plt.subplots(figsize=(10, 10))
-    ax.plot(t_coords, u_e_coords, label="total u_e")
-    ax.plot(t_coords, u_c_coords, label="total u_c")
-    plt.legend()
-    plt.show()
+    fig = plot_summed_ahl(particle_evolution)
+    fig.show()
+
+
+def third_benchmark():
+    global bacteria_particles
+    bacteria_particles = []
+    particles, particle_pos = initial_particles()
+
+    with open("bacterialPos.dat", "r") as file:
+        for line_i, line in enumerate(file):
+            x, y = map(lambda s: float(s), line.split("   ")[1:3])
+            best_j = next(_j for _j in range(0, len(particles))
+                          if particles[_j].x <= x < particles[_j].x + h and particles[_j].y <= y < particles[_j].y + h)
+
+            # First 7 bacteria have u_c = u_thresh, rest u_c = 0
+            if line_i < 7:
+                particles[best_j] = Particle2D2(x, y, 0, u_thresh * volume_p)
+            else:
+                particles[best_j] = Particle2D2(x, y, 0, 0)
+            bacteria_particles.append(best_j)
+
+    cells = CellList2D(particle_pos, domain_lower_bound, domain_upper_bound, cell_side)
+    verlet = VerletList(particle_pos, cells, cutoff)
+    particle_evolution = pse_operator_2d(particles, verlet, env, 2, kernel_e, _update_particle=update_particle_qs)
+
+    print_activated_bacteria(particle_evolution)
+
+    x_coords, y_coords, u_e_coords = pse_predict_u_2d(particle_evolution[-1][1], 0, env)
+    fig = plot_colormap(u_e_coords, particle_number_per_dim, particle_number_per_dim,
+                        title="u_e concentration field at t={}".format(particle_evolution[-1][0]))
+    fig.show()
 
 
 if __name__ == "__main__":
@@ -190,4 +235,9 @@ if __name__ == "__main__":
                           cutoff, cell_side, t_max, dt)
         second_benchmark()
     elif main == Main.THIRD_BENCHMARK:
-        pass
+        gamma_e = 0.01
+        gamma_c = 0.01
+        t_max = 200
+        env = Environment(D, domain_lower_bound, domain_upper_bound, particle_number_per_dim, h, epsilon, volume_p,
+                          cutoff, cell_side, t_max, dt)
+        third_benchmark()
