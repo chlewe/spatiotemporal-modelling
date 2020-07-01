@@ -1,13 +1,16 @@
-import math
+import functools
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(os.curdir)))
 
-from evaluation import *
-from pse import *
+from evaluation import plot_nxm
+from kernel import kernel_e_2d_gaussian
+from lists import Environment, Particle2D2, CellList2D, VerletList
+from pse import pse_operator_2d, pse_predict_u_2d
 from random import uniform
+from typing import Tuple, List
 
 D = 10
 domain_lower_bound = 0
@@ -23,6 +26,8 @@ dt = 0.01
 env = Environment(D, domain_lower_bound, domain_upper_bound, particle_number_per_dim, h, epsilon, volume_p, cutoff,
                   cell_side, t_max, dt)
 
+kernel_e = functools.partial(kernel_e_2d_gaussian, epsilon=epsilon)
+
 
 def apply_brusselator(_uv_strengths: Tuple[float, float]) -> Tuple[float, float]:
     _u = _uv_strengths[0] / volume_p
@@ -32,14 +37,7 @@ def apply_brusselator(_uv_strengths: Tuple[float, float]) -> Tuple[float, float]
     return du * volume_p, dv * volume_p
 
 
-def kernel_e(p: Particle2D2, q: Particle2D2) -> float:
-    factor = 4 / (math.pi * epsilon ** 2)
-    squared_norm = (q.x - p.x) ** 2 + (q.y - p.y) ** 2
-    exponent = -squared_norm / epsilon ** 2
-    return factor * math.exp(exponent)
-
-
-def initial_particles() -> Tuple[List[Particle2D], List[Particle2D]]:
+def initial_particles() -> Tuple[List[Particle2D2], List[Particle2D2]]:
     _particles = []
     _particle_pos = []
 

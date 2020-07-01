@@ -1,11 +1,15 @@
+import functools
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(os.curdir)))
 
-from pse import *
-from rw import *
+from kernel import kernel_e_1d_gaussian
+from lists import Environment, Particle1D1, CellList1D, VerletList
+from pse import pse_operator_1d, pse_predict_u_1d
+from rw import rw_operator_1d, rw_predict_u_1d
 
 D = 0.0001
 domain_lower_bound = -4
@@ -21,6 +25,8 @@ dt = 0.1
 env = Environment(D, domain_lower_bound, domain_upper_bound, normal_particle_number * 2, h, epsilon, volume_p, cutoff,
                   cell_side, t_max, dt)
 
+kernel_e = functools.partial(kernel_e_1d_gaussian, epsilon=epsilon)
+
 
 def u0(x):
     return 0 if x < 0 else x * math.exp(-x ** 2)
@@ -28,18 +34,6 @@ def u0(x):
 
 def u_exact(x, t):
     return x / ((1 + 4 * D * t) ** (3/2)) * math.exp(-x**2 / 1 + 4 * D * t)
-
-
-# Gaussian kernel
-def kernel_e(p: Particle1D, q: Particle1D):
-    dist_x = q.x - p.x
-    return 1 / (2 * epsilon * math.sqrt(math.pi)) * math.exp(-dist_x ** 2 / (4 * epsilon ** 2))
-
-
-# Alternative, polynomial kernel
-def kernel_e_poly(p: Particle1D, q: Particle1D):
-    dist_x = q.x - p.x
-    return 1 / h * 15 / math.pi ** 2 / (abs(dist_x / h) ** 10 + 1)
 
 
 # create normal particles (0,4] and mirrored particles [-4,0)

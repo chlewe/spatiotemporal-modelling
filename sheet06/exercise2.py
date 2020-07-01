@@ -1,3 +1,4 @@
+import functools
 import math
 import matplotlib.pyplot as plt
 import numpy as np
@@ -5,8 +6,10 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(os.curdir)))
 
-from evaluation import *
-from pse import *
+from evaluation import plot_nxm
+from kernel import kernel_e_2d_gaussian
+from lists import Environment, Particle2D1, CellList2D, VerletList
+from pse import pse_operator_2d, pse_predict_u_2d
 
 D = 2
 domain_lower_bound = 0
@@ -22,6 +25,8 @@ dt = h ** 2 / (3 * D)
 env = Environment(D, domain_lower_bound, domain_upper_bound, particle_number_per_dim, h, epsilon, volume_p, cutoff,
                   cell_side, t_max, dt)
 
+kernel_e = functools.partial(kernel_e_2d_gaussian, epsilon=epsilon)
+
 
 def delta(a: float, x: float):
     return 1 / (a * math.sqrt(math.pi)) * math.exp(-(x / a) ** 2)
@@ -33,13 +38,6 @@ def u0(x: float, y: float):
     y_ = y - 1 / 2
 
     return delta(a, x_) * delta(a, y_)
-
-
-def kernel_e(p: Particle2D, q: Particle2D):
-    factor = 4 / (math.pi * epsilon ** 2)
-    squared_norm = (q.x - p.x) ** 2 + (q.y - p.y) ** 2
-    exponent = -squared_norm / epsilon ** 2
-    return factor * math.exp(exponent)
 
 
 def initial_particles():
