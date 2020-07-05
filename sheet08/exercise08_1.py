@@ -7,13 +7,11 @@ sys.path.append(os.path.dirname(os.path.abspath(os.curdir)))
 import qs
 
 from enum import Enum
-from evaluation import *
-from functools import partial
-from kernel import *
-from pse import *
-from qs_impl import f, initial_particles, plot_summed_ahl, print_activated_bacteria, update_particle_qs
-
-kernel_e = partial(kernel_e_2d_gaussian, epsilon=qs.epsilon)
+from evaluation import plot_colormap
+from pse import inner_square_outer_boundary
+from lists import VerletList
+from qs_impl import f, initial_particles, plot_summed_ahl, print_activated_bacteria, apply_diffusion_reaction,\
+    print_summed_ahl, load_bacteria, apply_periodic_boundary_conditions, qs_predict_u_2d
 
 
 class Main(Enum):
@@ -37,39 +35,49 @@ def test_f_qs():
     fig.show()
 
 
+def simulate(_particles, _verlet: VerletList, n_evolutions: int):
+    inner_square, outer_index_pairs = inner_square_outer_boundary(qs.particle_number_per_dim, qs.cutoff, qs.h)
+    _particle_evolution = [(0, _particles)]
+    dt_evolution = qs.t_max if n_evolutions < 1 else qs.t_max / (n_evolutions - 1)
+
+    for t in np.arange(qs.dt, qs.t_max + qs.dt, qs.dt):
+        print(t)
+
+        updated_particles = apply_diffusion_reaction(_particles, _verlet)
+        apply_periodic_boundary_conditions(updated_particles, outer_index_pairs)
+
+        _particles = updated_particles
+        if t % dt_evolution < qs.dt:
+            _particle_evolution.append((t, _particles))
+
+    # There are cases where the last evolution step is missed
+    if qs.t_max % dt_evolution != 0:
+        _particle_evolution.append((qs.t_max, _particles))
+    return _particle_evolution
+
+
 def first_benchmark():
-    particles, particle_pos = initial_particles()
+    particles, verlet = initial_particles()
     i = math.floor(len(particles) / 2)
-    middle_p = particles[i]
-    particles[i] = Particle2D2(middle_p.x, middle_p.y, 0, qs.u_thresh * qs.volume_p)
+    particles[i][2:] = 0, qs.u_thresh
     qs.bacteria_particles = [i]
 
-    cells = CellList2D(particle_pos, qs.domain_lower_bound, qs.domain_upper_bound, qs.cell_side)
-    verlet = VerletList(particle_pos, cells, qs.cutoff)
-    particle_evolution = pse_operator_2d(particles, verlet, qs.env, 2, kernel_e, _update_particle=update_particle_qs)
-
-    total_u_e = sum(map(lambda q: q.strength0, particle_evolution[-1][1]))
-    total_u_c = sum(map(lambda q: q.strength1, particle_evolution[-1][1]))
-    print("{} (∫u_e) + {} (∫u_c) ≈ {}"
-          .format(round(total_u_e, 2), round(total_u_c, 2), round(total_u_e + total_u_c, 2)))
+    particle_evolution = simulate(particles, verlet, 2)
+    print_summed_ahl(particle_evolution)
 
 
 def second_benchmark():
-    particles, particle_pos = initial_particles()
+    particles, verlet = initial_particles()
     i = math.floor(len(particles) / 2)
-    middle_p = particles[i]
-    particles[i] = Particle2D2(middle_p.x, middle_p.y, 0, qs.u_thresh * qs.volume_p)
+    particles[i][2:] = 0, qs.u_thresh
     qs.bacteria_particles = [i]
 
-    j = next(_j for _j in range(0, len(particles)) if
-             particles[_j].x == middle_p.x + 4 and particles[_j].y == middle_p.y)
-    particles[j] = Particle2D2(middle_p.x + 4, middle_p.y, 0, 0)
-    qs.bacteria_particles.append(j)
+    for j in range(0, qs.particle_number_per_dim ** 2):
+        if particles[j][0] == particles[i][0] + 4 and particles[j][1] == particles[i][1]:
+            qs.bacteria_particles.append(j)
+            break
 
-    cells = CellList2D(particle_pos, qs.domain_lower_bound, qs.domain_upper_bound, qs.cell_side)
-    verlet = VerletList(particle_pos, cells, qs.cutoff)
-    particle_evolution = pse_operator_2d(particles, verlet, qs.env, 100, kernel_e, _update_particle=update_particle_qs)
-
+    particle_evolution = simulate(particles, verlet, 100)
     print_activated_bacteria(particle_evolution)
 
     fig = plot_summed_ahl(particle_evolution)
@@ -77,29 +85,13 @@ def second_benchmark():
 
 
 def third_benchmark():
-    particles, particle_pos = initial_particles()
+    particles, verlet = initial_particles()
+    load_bacteria("bacterialPos.dat", particles)
 
-    with open("bacterialPos.dat", "r") as file:
-        for line_i, line in enumerate(file):
-            x, y = map(lambda s: float(s), line.split("   ")[1:3])
-            best_j = next(_j for _j in range(0, len(particles))
-                          if particles[_j].x <= x < particles[_j].x + qs.h
-                          and particles[_j].y <= y < particles[_j].y + qs.h)
-
-            # First 7 bacteria have u_c = u_thresh, rest u_c = 0
-            if line_i < 7:
-                particles[best_j] = Particle2D2(x, y, 0, qs.u_thresh * qs.volume_p)
-            else:
-                particles[best_j] = Particle2D2(x, y, 0, 0)
-            qs.bacteria_particles.append(best_j)
-
-    cells = CellList2D(particle_pos, qs.domain_lower_bound, qs.domain_upper_bound, qs.cell_side)
-    verlet = VerletList(particle_pos, cells, qs.cutoff)
-    particle_evolution = pse_operator_2d(particles, verlet, qs.env, 2, kernel_e, _update_particle=update_particle_qs)
-
+    particle_evolution = simulate(particles, verlet, 2)
     print_activated_bacteria(particle_evolution)
 
-    x_coords, y_coords, u_e_coords = pse_predict_u_2d(particle_evolution[-1][1], 0, qs.env)
+    x_coords, y_coords, u_e_coords = qs_predict_u_2d(particle_evolution[-1][1], 0)
     fig = plot_colormap(u_e_coords, qs.particle_number_per_dim, qs.particle_number_per_dim,
                         title="$u_e$ concentration field at t={}".format(particle_evolution[-1][0]))
     fig.show()
@@ -114,13 +106,9 @@ if __name__ == "__main__":
         qs.gamma_e = 0.05
         qs.gamma_c = 0.05
         qs.t_max = 50
-        qs.env = Environment(qs.D, qs.domain_lower_bound, qs.domain_upper_bound, qs.particle_number_per_dim, qs.h,
-                             qs.epsilon, qs.volume_p, qs.cutoff, qs.cell_side, qs.t_max, qs.dt)
         second_benchmark()
     elif main == Main.THIRD_BENCHMARK:
         qs.gamma_e = 0.01
         qs.gamma_c = 0.01
         qs.t_max = 200
-        qs.env = Environment(qs.D, qs.domain_lower_bound, qs.domain_upper_bound, qs.particle_number_per_dim, qs.h,
-                             qs.epsilon, qs.volume_p, qs.cutoff, qs.cell_side, qs.t_max, qs.dt)
         third_benchmark()

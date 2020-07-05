@@ -4,16 +4,16 @@ from lists import *
 from typing import List, Dict
 
 
-def inner_square_outer_boundary(env: Environment)\
+def inner_square_outer_boundary(particle_number_per_dim: int, cutoff: float, h: float)\
         -> Tuple[List[int], Dict[int, int]]:
     inner_indices = []
     outer_index_pairs = dict()
-    inner_square_left_index = int(env.cutoff / env.h)
-    inner_square_after_right_index = env.particle_number_per_dim - inner_square_left_index
+    inner_square_left_index = int(cutoff / h)
+    inner_square_after_right_index = particle_number_per_dim - inner_square_left_index
     inner_square_width = inner_square_after_right_index - inner_square_left_index
 
     def to_index(_i, _j):
-        return _i * env.particle_number_per_dim + _j
+        return _i * particle_number_per_dim + _j
 
     # Inner square
     for i in range(inner_square_left_index, inner_square_after_right_index):
@@ -24,7 +24,7 @@ def inner_square_outer_boundary(env: Environment)\
         for j in range(inner_square_left_index, inner_square_after_right_index):
             outer_index_pairs[to_index(i, j)] = to_index(i + inner_square_width, j)
     # Lower border
-    for i in range(inner_square_after_right_index, env.particle_number_per_dim):
+    for i in range(inner_square_after_right_index, particle_number_per_dim):
         for j in range(inner_square_left_index, inner_square_after_right_index):
             outer_index_pairs[to_index(i, j)] = to_index(i - inner_square_width, j)
     # Left border
@@ -33,20 +33,20 @@ def inner_square_outer_boundary(env: Environment)\
             outer_index_pairs[to_index(i, j)] = to_index(i, j + inner_square_width)
     # Right border
     for i in range(inner_square_left_index, inner_square_after_right_index):
-        for j in range(inner_square_after_right_index, env.particle_number_per_dim):
+        for j in range(inner_square_after_right_index, particle_number_per_dim):
             outer_index_pairs[to_index(i, j)] = to_index(i, j - inner_square_width)
     # Corners
     for i in range(0, inner_square_left_index):
         for j in range(0, inner_square_left_index):
             outer_index_pairs[to_index(i, j)] = to_index(i + inner_square_width, j + inner_square_width)
-    for i in range(inner_square_after_right_index, env.particle_number_per_dim):
+    for i in range(inner_square_after_right_index, particle_number_per_dim):
         for j in range(0, inner_square_left_index):
             outer_index_pairs[to_index(i, j)] = to_index(i - inner_square_width, j + inner_square_width)
     for i in range(0, inner_square_left_index):
-        for j in range(inner_square_after_right_index, env.particle_number_per_dim):
+        for j in range(inner_square_after_right_index, particle_number_per_dim):
             outer_index_pairs[to_index(i, j)] = to_index(i + inner_square_width, j - inner_square_width)
-    for i in range(inner_square_after_right_index, env.particle_number_per_dim):
-        for j in range(inner_square_after_right_index, env.particle_number_per_dim):
+    for i in range(inner_square_after_right_index, particle_number_per_dim):
+        for j in range(inner_square_after_right_index, particle_number_per_dim):
             outer_index_pairs[to_index(i, j)] = to_index(i - inner_square_width, j - inner_square_width)
 
     return inner_indices, outer_index_pairs

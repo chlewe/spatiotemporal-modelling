@@ -1,5 +1,3 @@
-from lists import Environment
-
 """
 Global variables for quorum sensing (QS)
 """
@@ -15,8 +13,6 @@ cutoff = 3 * epsilon
 cell_side = cutoff
 t_max = 20
 dt = h ** 2 / (4 * D)
-env = Environment(D, domain_lower_bound, domain_upper_bound, particle_number_per_dim, h, epsilon, volume_p, cutoff,
-                  cell_side, t_max, dt)
 
 d1 = 0.25      # diffusion rate of AHL from outside to inside the cell
 d2 = 2.5       # diffusion rate of AHL from inside to outside the cell
