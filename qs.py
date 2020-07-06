@@ -24,3 +24,8 @@ gamma_e = 0.5  # decay rate of extracellular AHL
 gamma_c = 0.5  # decay rate of intracellular AHL
 
 bacteria_particles = []
+
+
+def update_h():
+    global h
+    h = (domain_upper_bound - domain_lower_bound) / (particle_number_per_dim - 1)

@@ -22,7 +22,7 @@ def plot_nxm(data: List[Tuple[List, List, List]], n: int, m: int, zlabels=None, 
     return fig
 
 
-def plot_colormap(z_data: List, n: int, m: int, title=None):
+def plot_colormap(z_data: List, n: int, m: int, xlabel=None, ylabel=None, title=None):
     z_grid = np.zeros((n, m))
     for i in range(0, n):
         for j in range(0, m):
@@ -32,8 +32,10 @@ def plot_colormap(z_data: List, n: int, m: int, title=None):
     im = ax.pcolormesh(z_grid, cmap="viridis")
     fig.colorbar(im, ax=ax)
 
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
+    if xlabel:
+        ax.set_xlabel(xlabel)
+    if ylabel:
+        ax.set_ylabel(ylabel)
     if title:
         ax.title.set_text(title)
 

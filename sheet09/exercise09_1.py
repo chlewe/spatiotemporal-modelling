@@ -9,7 +9,7 @@ from evaluation import plot_colormap
 from lists import VerletList
 from pse import inner_square_outer_boundary
 from qs_impl import initial_particles, print_activated_bacteria, apply_diffusion_reaction, print_summed_ahl,\
-    load_bacteria, qs_predict_u_2d, apply_periodic_boundary_conditions
+    load_bacteria, qs_predict_u_2d, apply_periodic_boundary_conditions, xy_to_index
 from numpy import ndarray
 
 
@@ -36,7 +36,8 @@ def a(s: float) -> float:
 
 def remesh_range(x: float):
     _x = math.floor(x)
-    return filter(lambda y: 0 <= y < qs.particle_number_per_dim, [_x - 2, _x - 1, _x, _x + 1, _x + 2, _x + 3])
+    return filter(lambda y: qs.domain_lower_bound <= y <= qs.domain_upper_bound,
+                  [_x - 2, _x - 1, _x, _x + 1, _x + 2, _x + 3])
 
 
 def apply_remeshing(unmoved_particles: ndarray, moved_particles: ndarray) -> ndarray:
@@ -54,7 +55,7 @@ def apply_remeshing(unmoved_particles: ndarray, moved_particles: ndarray) -> nda
             for grid_y in remesh_range(y):
                 s_x = (x - grid_x)  # / qs.h = 1
                 s_y = (y - grid_y)  # / qs.h = 1
-                j = grid_x * qs.particle_number_per_dim + grid_y
+                j = xy_to_index(grid_x, grid_y)
                 remeshed_particles[j][2] += a(s_x) * a(s_y) * strength_u_e
 
     return remeshed_particles
@@ -86,6 +87,10 @@ def simulate(_particles: ndarray, _verlet: VerletList, n_evolutions: int):
 
 
 if __name__ == "__main__":
+    qs.domain_lower_bound = -3
+    qs.domain_upper_bound = 53
+    qs.particle_number_per_dim = 57
+    qs.update_h()
     qs.gamma_e = 0.1
     qs.gamma_c = 0.1
     qs.t_max = 10
@@ -99,5 +104,7 @@ if __name__ == "__main__":
 
     x_coords, y_coords, u_e_coords = qs_predict_u_2d(particle_evolution[-1][1], 0)
     fig = plot_colormap(u_e_coords, qs.particle_number_per_dim, qs.particle_number_per_dim,
+                        xlabel="x + {}".format(-qs.domain_lower_bound),
+                        ylabel="y + {}".format(-qs.domain_lower_bound),
                         title="$u_e$ concentration field at t={}".format(particle_evolution[-1][0]))
     fig.show()

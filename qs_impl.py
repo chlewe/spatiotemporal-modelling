@@ -79,13 +79,17 @@ def apply_diffusion_reaction(_particles: ndarray, _verlet: VerletList) -> ndarra
     return updated_particles
 
 
+def xy_to_index(x: int, y: int) -> int:
+    return int((x - qs.domain_lower_bound) / qs.h * qs.particle_number_per_dim + (y - qs.domain_lower_bound) / qs.h)
+
+
 def initial_particles() -> Tuple[ndarray, VerletList]:
     _particles = np.zeros((qs.particle_number_per_dim ** 2, 4))
 
     for i in range(0, qs.particle_number_per_dim):
         for j in range(0, qs.particle_number_per_dim):
-            x = i * qs.h
-            y = j * qs.h
+            x = qs.domain_lower_bound + i * qs.h
+            y = qs.domain_lower_bound + j * qs.h
             strength_u_e = 0
             strength_u_c = 0
 
@@ -100,7 +104,7 @@ def load_bacteria(bacteria_file, _particles: ndarray):
     with open(bacteria_file, "r") as file:
         for line_i, line in enumerate(file):
             x, y = map(lambda s: float(s), line.split("   ")[1:3])
-            best_j = int(x) * qs.particle_number_per_dim + int(y)
+            best_j = xy_to_index(int(x), int(y))
             best_x = _particles[best_j][0]
             best_y = _particles[best_j][1]
 

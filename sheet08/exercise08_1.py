@@ -93,6 +93,8 @@ def third_benchmark():
 
     x_coords, y_coords, u_e_coords = qs_predict_u_2d(particle_evolution[-1][1], 0)
     fig = plot_colormap(u_e_coords, qs.particle_number_per_dim, qs.particle_number_per_dim,
+                        xlabel="x",
+                        ylabel="y",
                         title="$u_e$ concentration field at t={}".format(particle_evolution[-1][0]))
     fig.show()
 
