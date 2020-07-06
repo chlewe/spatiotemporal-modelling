@@ -3,11 +3,9 @@ import numpy as np
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(os.curdir)))
+import sim
 
 from typing import Tuple
-
-t_max = 20
-dt = 0.01
 
 
 def apply_brusselator(_u: float, _v: float, _a: int, _b: int, _k: int) -> Tuple[float, float]:
@@ -17,6 +15,9 @@ def apply_brusselator(_u: float, _v: float, _a: int, _b: int, _k: int) -> Tuple[
 
 
 if __name__ == "__main__":
+    sim.dt = 0.01
+    sim.t_max = 20
+
     a, b, k = 2, 6, 1
     u_values, v_values, t_values = [], [], []
 
@@ -25,14 +26,14 @@ if __name__ == "__main__":
     # fixed-point setting
     # particles_u, particles_v = [a], [b / a]
 
-    for t in np.arange(0, t_max, dt):
+    for t in np.arange(0, sim.t_max, sim.dt):
         u_values.append(particles_u[0])
         v_values.append(particles_v[0])
         t_values.append(t)
 
         du, dv = apply_brusselator(particles_u[0], particles_v[0], a, b, k)
-        particles_u = [particles_u[0] + du * dt]
-        particles_v = [particles_v[0] + dv * dt]
+        particles_u = [particles_u[0] + du * sim.dt]
+        particles_v = [particles_v[0] + dv * sim.dt]
 
     fig, ax = plt.subplots(figsize=(10, 10))
     ax.plot(t_values, u_values, label="u")

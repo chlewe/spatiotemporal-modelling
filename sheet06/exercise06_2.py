@@ -1,31 +1,16 @@
-import functools
 import math
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(os.curdir)))
+import sim
 
 from evaluation import plot_nxm
 from kernel import kernel_e_2d_gaussian
-from lists import Environment, Particle2D1, CellList2D, VerletList
-from pse import pse_operator_2d, pse_predict_u_2d
-
-D = 2
-domain_lower_bound = 0
-domain_upper_bound = 1
-particle_number_per_dim = 26
-h = (domain_upper_bound - domain_lower_bound) / (particle_number_per_dim - 1)
-epsilon = h
-volume_p = h ** 2
-cutoff = 3 * epsilon
-cell_side = cutoff
-t_max = 0.3
-dt = h ** 2 / (3 * D)
-env = Environment(D, domain_lower_bound, domain_upper_bound, particle_number_per_dim, h, epsilon, volume_p, cutoff,
-                  cell_side, t_max, dt)
-
-kernel_e = functools.partial(kernel_e_2d_gaussian, epsilon=epsilon)
+from lists import CellList2D, VerletList
+from typing import Tuple
+from numpy import ndarray
+from sim_impl import simulate_2d, pse_predict_u_2d
 
 
 def delta(a: float, x: float):
@@ -40,38 +25,58 @@ def u0(x: float, y: float):
     return delta(a, x_) * delta(a, y_)
 
 
-def initial_particles():
-    _particles = []
-    _particle_pos = []
+def initial_particles() -> Tuple[ndarray, VerletList]:
+    _particles = np.zeros((sim.particle_number_per_dim ** 2, 3))
 
-    for i in range(0, particle_number_per_dim):
-        for j in range(0, particle_number_per_dim):
-            x = i * h
-            y = j * h
-            mass = volume_p * u0(x, y)
-            _particles.append(Particle2D1(x, y, mass))
-            _particle_pos.append((x, y))
+    for i in range(0, sim.particle_number_per_dim):
+        for j in range(0, sim.particle_number_per_dim):
+            x = i * sim.h
+            y = j * sim.h
+            mass = u0(x, y)
 
-    return _particles, _particle_pos
+            _particles[i * sim.particle_number_per_dim + j][:] = x, y, mass
+
+    _cells = CellList2D(_particles[:, 0:2], sim.domain_lower_bound, sim.domain_upper_bound, sim.cell_side)
+    _verlet = VerletList(_particles[:, 0:2], _cells, sim.cutoff)
+    return _particles, _verlet
+
+
+def apply_diffusion(_particles: ndarray, _verlet: VerletList) -> ndarray:
+    updated_particles = np.zeros((sim.particle_number_per_dim ** 2, 3))
+
+    for i in range(0, sim.particle_number_per_dim ** 2):
+        p = _particles[i]
+        summed_mass_interaction = 0
+
+        for j in _verlet[i]:
+            q = _particles[j]
+
+            kernel_value = kernel_e_2d_gaussian(p, q)
+            mass_difference = q[2] - p[2]
+            summed_mass_interaction += mass_difference * kernel_value
+
+        d_mass = sim.volume_p * sim.D / (sim.epsilon ** 2) * summed_mass_interaction
+        updated_mass = p[2] + d_mass * sim.dt
+        updated_particles[i][:] = p[0], p[1], updated_mass
+
+    return updated_particles
 
 
 if __name__ == "__main__":
-    particles, particle_pos = initial_particles()
-    cells = CellList2D(particle_pos, domain_lower_bound, domain_upper_bound, cell_side)
-    verlet = VerletList(particle_pos, cells, cutoff)
+    sim.D = 2
+    sim.domain_lower_bound = 0
+    sim.domain_upper_bound = 1
+    sim.particle_number_per_dim = 26
+    sim.h = (sim.domain_upper_bound - sim.domain_lower_bound) / (sim.particle_number_per_dim - 1)
+    sim.epsilon = sim.h
+    sim.volume_p = sim.h ** 2
+    sim.cutoff = 3 * sim.epsilon
+    sim.cell_side = sim.cutoff
+    sim.t_max = 0.3
+    sim.dt = sim.h ** 2 / (3 * sim.D)
 
-    particle_evolution = pse_operator_2d(particles, verlet, env, 4, kernel_e)
-
-    #######################################
-    # Single plot
-    #######################################
-    # fig = plt.figure()
-    # x_coords, y_coords, concentration = predict_u_pse(particle_evolution[-1])
-
-    # ax = plt.axes(projection='3d')
-    # surf = ax.plot_trisurf(x_coords, y_coords, concentration, cmap="jet", linewidth=0.1)
-    # fig.colorbar(surf, shrink=0.5, aspect=5)
-    # plt.show()
+    particles, verlet = initial_particles()
+    particle_evolution = simulate_2d(particles, verlet, 4, apply_diffusion)
 
     #######################################
     # 4-in-1 plot
@@ -79,11 +84,12 @@ if __name__ == "__main__":
     xy_concentration = []
     t_coords = []
     for t in range(0, 4):
-        x_coords, y_coords, concentration = pse_predict_u_2d(particle_evolution[t][1], 0, env)
+        x_coords, y_coords, concentration = pse_predict_u_2d(particle_evolution[t][1], 0)
         xy_concentration.append((x_coords, y_coords, concentration))
         t_coords.append(round(particle_evolution[t][0], 2))
 
-    fig = plot_nxm(xy_concentration, 2, 2, zlabels=("u", "u", "u", "u"),
-                   titles=("t={}".format(t_coords[0]), "t={}".format(t_coords[1]), "t={}".format(t_coords[2]),
-                           "t={}".format(t_coords[3])))
+    fig = plot_nxm(xy_concentration, 2, 2,
+                   zlabels=("u", "u", "u", "u"),
+                   titles=("t={}".format(t_coords[0]), "t={}".format(t_coords[1]),
+                           "t={}".format(t_coords[2]), "t={}".format(t_coords[3])))
     fig.show()

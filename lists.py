@@ -11,31 +11,8 @@ def distance(pos1: Tuple, pos2: Tuple) -> float:
     return math.sqrt(squared_distance)
 
 
-Particle1D = collections.namedtuple("Particle", ["x"])  # Wrapper
-Particle2D = collections.namedtuple("Particle", ["x", "y"])  # Wrapper
-Particle1D1 = collections.namedtuple("Particle", ["x", "strength0"])
-Particle1D2 = collections.namedtuple("Particle", ["x", "strength0", "strength1"])
-Particle2D1 = collections.namedtuple("Particle", ["x", "y", "strength0"])
-Particle2D2 = collections.namedtuple("Particle", ["x", "y", "strength0", "strength1"])
 CellIndex1D = collections.namedtuple("CellIndex2D", ["x"])
 CellIndex2D = collections.namedtuple("CellIndex2D", ["x", "y"])
-Environment = collections.namedtuple("Environment", ["D", "domain_lower_bound", "domain_upper_bound",
-                                                     "particle_number_per_dim", "h", "epsilon", "volume_p", "cutoff",
-                                                     "cell_side", "t_max", "dt"])
-
-
-def create_particle_1d(x: float, strengths: List[float]) -> Particle1D:
-    if len(strengths) == 1:
-        return Particle1D1(x, strengths[0])
-    else:
-        return Particle1D2(x, strengths[0], strengths[1])
-
-
-def create_particle_2d(x: float, y: float, strengths: List[float]) -> Particle2D:
-    if len(strengths) == 1:
-        return Particle2D1(x, y, strengths[0])
-    else:
-        return Particle2D2(x, y, strengths[0], strengths[1])
 
 
 class CellList:
