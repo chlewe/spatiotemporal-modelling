@@ -2,7 +2,7 @@ import math
 import numpy as np
 import sim
 
-from lists import CellList2D, VerletList
+from lists import VerletList
 from typing import Tuple, List, Dict
 from numpy import ndarray
 
@@ -60,6 +60,18 @@ def apply_periodic_boundary_conditions(_particles: ndarray, outer_index_pairs):
         _particles[i][2:] = _particles[copy_index][2:]
 
 
+def simulate_1d(_particles: ndarray, _verlet: VerletList, _apply_diffusion_reaction)\
+        -> ndarray:
+    _particle_evolution = [(0, _particles)]
+
+    for t in np.arange(sim.dt, sim.t_max + sim.dt, sim.dt):
+        print("{:6.2f}%".format(t / (sim.t_max + sim.dt) * 100))
+        updated_particles = _apply_diffusion_reaction(_particles, _verlet)
+        _particles = updated_particles
+
+    return updated_particles
+
+
 def simulate_2d(_particles: ndarray, _verlet: VerletList, n_evolutions: int, _apply_diffusion_reaction)\
         -> List[Tuple[float, ndarray]]:
     inner_square, outer_index_pairs = inner_square_outer_boundary_2d()
@@ -67,7 +79,7 @@ def simulate_2d(_particles: ndarray, _verlet: VerletList, n_evolutions: int, _ap
     dt_evolution = sim.t_max if n_evolutions < 1 else sim.t_max / (n_evolutions - 1)
 
     for t in np.arange(sim.dt, sim.t_max + sim.dt, sim.dt):
-        print(t)
+        print("{:6.2f}%".format(t / (sim.t_max + sim.dt) * 100))
 
         updated_particles = _apply_diffusion_reaction(_particles, _verlet)
         apply_periodic_boundary_conditions(updated_particles, outer_index_pairs)
@@ -82,13 +94,43 @@ def simulate_2d(_particles: ndarray, _verlet: VerletList, n_evolutions: int, _ap
     return _particle_evolution
 
 
+def rw_predict_u_1d(_particles: ndarray, start_x: float, end_x: float) -> Tuple[List[float], List[float]]:
+    bins = 16
+    bin_width = (end_x - start_x) / bins
+    bin_concentrations = []
+    bin_edges = [start_x + i * bin_width for i in range(0, bins + 1)]
+
+    for i in range(0, bins):
+        bin_masses = [_particles[j][1] for j in range(0, sim.particle_number_per_dim)
+                      if bin_edges[i] < _particles[j][0] <= bin_edges[i + 1]]
+        if not bin_masses:
+            bin_concentrations.append(0)
+        else:
+            bin_concentrations.append(sum(bin_masses) / bin_width)
+
+    bin_centroids = [(bin_edges[i] + bin_edges[i + 1]) / 2 for i in range(0, bins)]
+    return bin_centroids, bin_concentrations
+
+
+def pse_predict_u_1d(_particles: ndarray, start_x: float, end_x: float) -> Tuple[List[float], List[float]]:
+    _x_coords = []
+    _concentrations = []
+
+    for i in range(0, sim.particle_number_per_dim):
+        if start_x <= _particles[i][0] <= end_x:
+            _x_coords.append(_particles[i][0])
+            _concentrations.append(_particles[i][1] / sim.volume_p)
+
+    return _x_coords, _concentrations
+
+
 def pse_predict_u_2d(_particles: ndarray, strength_i: int) -> Tuple[ndarray, ndarray, ndarray]:
     _x_coords = []
     _y_coords = []
-    _concentration = []
+    _concentrations = []
 
     _x_coords = _particles[:, 0]
     _y_coords = _particles[:, 1]
-    _concentration = _particles[:, 2 + strength_i] / sim.volume_p
+    _concentrations = _particles[:, 2 + strength_i] / sim.volume_p
 
-    return _x_coords, _y_coords, _concentration
+    return _x_coords, _y_coords, _concentrations
