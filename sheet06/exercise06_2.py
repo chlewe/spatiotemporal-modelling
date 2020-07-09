@@ -32,7 +32,7 @@ def initial_particles() -> Tuple[ndarray, VerletList]:
         for j in range(0, sim.particle_number_per_dim):
             x = i * sim.h
             y = j * sim.h
-            mass = u0(x, y)
+            mass = u0(x, y) * sim.volume_p
 
             _particles[i * sim.particle_number_per_dim + j][:] = x, y, mass
 

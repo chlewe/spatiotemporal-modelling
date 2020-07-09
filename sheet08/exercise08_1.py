@@ -23,7 +23,7 @@ class Main(Enum):
 
 
 #######################################
-# Select your main method
+# Select your main method:
 main = Main.THIRD_BENCHMARK
 #######################################
 
@@ -127,3 +127,5 @@ if __name__ == "__main__":
         qs.gamma_c = 0.01
         sim.t_max = 200
         third_benchmark()
+    else:
+        sys.exit(1)

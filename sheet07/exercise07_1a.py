@@ -5,7 +5,19 @@ import sys
 sys.path.append(os.path.dirname(os.path.abspath(os.curdir)))
 import sim
 
+from enum import Enum
 from typing import Tuple
+
+
+class Main(Enum):
+    OSCILLATING_SETTING = 0
+    FIXED_POINT_SETTING = 1
+
+
+#######################################
+# Select your main method:
+main = Main.OSCILLATING_SETTING
+#######################################
 
 
 def apply_brusselator(_u: float, _v: float, _a: int, _b: int, _k: int) -> Tuple[float, float]:
@@ -21,10 +33,12 @@ if __name__ == "__main__":
     a, b, k = 2, 6, 1
     u_values, v_values, t_values = [], [], []
 
-    # oscillating setting
-    particles_u, particles_v = [0.7], [0.04]
-    # fixed-point setting
-    # particles_u, particles_v = [a], [b / a]
+    if main == Main.OSCILLATING_SETTING:
+        particles_u, particles_v = [0.7], [0.04]
+    elif main == Main.FIXED_POINT_SETTING:
+        particles_u, particles_v = [a], [b / a]
+    else:
+        sys.exit(1)
 
     for t in np.arange(0, sim.t_max, sim.dt):
         u_values.append(particles_u[0])
