@@ -83,8 +83,8 @@ def initial_particles() -> Tuple[ndarray, VerletList]:
 
             _particles[i * sim.particle_number_per_dim + j][:] = x, y, strength_u_e, strength_u_c
 
-    cells = CellList2D(_particles[:, 0:2], sim.domain_lower_bound, sim.domain_upper_bound, sim.cell_side)
-    verlet = VerletList(_particles[:, 0:2], cells, sim.cutoff)
+    cells = CellList2D(_particles[:, 0:2])
+    verlet = VerletList(_particles[:, 0:2], cells)
     return _particles, verlet
 
 

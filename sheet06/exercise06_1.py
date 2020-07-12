@@ -52,8 +52,8 @@ def initial_particles() -> Tuple[ndarray, VerletList]:
         mass = u0(x) * sim.volume_p
         _particles[i][:] = x, mass
 
-    _cells = CellList1D(_particles[:, 0:1], sim.domain_lower_bound, sim.domain_upper_bound, sim.cell_side)
-    _verlet = VerletList(_particles[:, 0:1], _cells, sim.cutoff)
+    _cells = CellList1D(_particles[:, 0:1])
+    _verlet = VerletList(_particles[:, 0:1], _cells)
     return _particles, _verlet
 
 

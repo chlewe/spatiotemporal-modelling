@@ -25,8 +25,8 @@ def initial_particles() -> Tuple[ndarray, VerletList]:
 
             _particles[i * sim.particle_number_per_dim + j][:] = x, y, u * sim.volume_p, v * sim.volume_p
 
-    _cells = CellList2D(_particles[:, 0:2], sim.domain_lower_bound, sim.domain_upper_bound, sim.cell_side)
-    _verlet = VerletList(_particles[:, 0:2], _cells, sim.cutoff)
+    _cells = CellList2D(_particles[:, 0:2])
+    _verlet = VerletList(_particles[:, 0:2], _cells)
     return _particles, _verlet
 
 
@@ -84,14 +84,14 @@ if __name__ == "__main__":
     #######################################
     # xy-u and xy-v 4x4 plot
     #######################################
-    xy_concentration = []
+    xyu_coords = []
 
     for strength_i in range(0, 2):
         for t in range(0, 4):
             x_coords, y_coords, concentration_i = pse_predict_u_2d(particle_evolution[t][1], strength_i)
-            xy_concentration.append((x_coords, y_coords, concentration_i))
+            xyu_coords.append((x_coords, y_coords, concentration_i))
 
-    fig = plot_nxm(xy_concentration, 4, 2,
+    fig = plot_nxm(xyu_coords, 4, 2,
                    zlabels=("u", "u", "u", "u", "v", "v", "v", "v"),
                    titles=("t=0", "t=1/3t_max", "t=2/3t_max", "t=t_max",
                            "t=0", "t=1/3t_max", "t=2/3t_max", "t=t_max"))

@@ -36,8 +36,8 @@ def initial_particles() -> Tuple[ndarray, VerletList]:
 
             _particles[i * sim.particle_number_per_dim + j][:] = x, y, mass
 
-    _cells = CellList2D(_particles[:, 0:2], sim.domain_lower_bound, sim.domain_upper_bound, sim.cell_side)
-    _verlet = VerletList(_particles[:, 0:2], _cells, sim.cutoff)
+    _cells = CellList2D(_particles[:, 0:2])
+    _verlet = VerletList(_particles[:, 0:2], _cells)
     return _particles, _verlet
 
 
@@ -81,14 +81,14 @@ if __name__ == "__main__":
     #######################################
     # 4-in-1 plot
     #######################################
-    xy_concentration = []
+    xyu_coords = []
     t_coords = []
     for t in range(0, 4):
         x_coords, y_coords, concentration = pse_predict_u_2d(particle_evolution[t][1], 0)
-        xy_concentration.append((x_coords, y_coords, concentration))
+        xyu_coords.append((x_coords, y_coords, concentration))
         t_coords.append(round(particle_evolution[t][0], 2))
 
-    fig = plot_nxm(xy_concentration, 2, 2,
+    fig = plot_nxm(xyu_coords, 2, 2,
                    zlabels=("u", "u", "u", "u"),
                    titles=("t={}".format(t_coords[0]), "t={}".format(t_coords[1]),
                            "t={}".format(t_coords[2]), "t={}".format(t_coords[3])))

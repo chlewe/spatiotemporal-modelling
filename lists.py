@@ -1,5 +1,6 @@
 import collections
 import math
+import sim
 
 from typing import List, Tuple
 
@@ -34,22 +35,21 @@ class CellList:
 
 class CellList1D(CellList):
 
-    def __init__(self, positions: List[Tuple[float]], lower_bound: int, upper_bound: int, cell_side: float):
-        self.lower_bound = lower_bound
-        self.cell_side = cell_side
-        self.dim_width = math.floor((upper_bound - lower_bound) / cell_side) + 1
+    def __init__(self, positions: List[Tuple[float]]):
+        self.dim_width = math.floor((sim.domain_upper_bound - sim.domain_lower_bound) / sim.cell_side) + 1
+
         self.cells: List[List[int]] = [[] for _ in range(0, self.dim_width)]
 
         CellList.__init__(self, positions)
 
     def pos_get_cell_index(self, pos: Tuple[float]) -> CellIndex1D:
-        return CellIndex1D(math.floor((pos[0] - self.lower_bound) / self.cell_side))
+        return CellIndex1D(math.floor((pos[0] - sim.domain_lower_bound) / sim.cell_side))
 
     def get_neighbour_cell_indices(self, cell_index: CellIndex1D) -> List[CellIndex1D]:
         neighbour_indices = []
         for dx in [-1, 0, 1]:
             x = cell_index.x + dx
-            if 0 <= x < self.dim_width :
+            if 0 <= x < self.dim_width:
                 neighbour_indices.append(CellIndex1D(x))
         return neighbour_indices
 
@@ -59,17 +59,15 @@ class CellList1D(CellList):
 
 class CellList2D(CellList):
 
-    def __init__(self, positions: List[Tuple[float, float]], lower_bound: int, upper_bound: int, cell_side: float):
-        self.lower_bound = lower_bound
-        self.cell_side = cell_side
-        self.dim_width = math.floor((upper_bound - lower_bound) / cell_side) + 1
+    def __init__(self, positions: List[Tuple[float, float]]):
+        self.dim_width = math.floor((sim.domain_upper_bound - sim.domain_lower_bound) / sim.cell_side) + 1
         self.cells: List[List[List[int]]] = [[[] for _ in range(0, self.dim_width)] for _ in range(0, self.dim_width)]
 
         CellList.__init__(self, positions)
 
     def pos_get_cell_index(self, pos: Tuple[float, float]) -> CellIndex2D:
-        x_index = math.floor((pos[0] - self.lower_bound) / self.cell_side)
-        y_index = math.floor((pos[1] - self.lower_bound) / self.cell_side)
+        x_index = math.floor((pos[0] - sim.domain_lower_bound) / sim.cell_side)
+        y_index = math.floor((pos[1] - sim.domain_lower_bound) / sim.cell_side)
         return CellIndex2D(x_index, y_index)
 
     def get_neighbour_cell_indices(self, cell_index: CellIndex2D) -> List[CellIndex2D]:
@@ -89,7 +87,7 @@ class CellList2D(CellList):
 
 class VerletList:
 
-    def __init__(self, positions, cell_list: CellList, cutoff: float):
+    def __init__(self, positions, cell_list: CellList):
         num_particles = len(positions)
         self.cells = [[] for _ in range(0, num_particles)]
 
@@ -100,7 +98,7 @@ class VerletList:
             for neighbour_index in neighbour_indices:
                 for other_pos_index in cell_list[neighbour_index]:
                     other_pos = positions[other_pos_index]
-                    if distance(pos, other_pos) <= cutoff:
+                    if distance(pos, other_pos) <= sim.cutoff:
                         self.cells[pos_index].append(other_pos_index)
 
     def __getitem__(self, item: int) -> List[int]:
