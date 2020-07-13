@@ -42,7 +42,7 @@ def simulate(_particles, _verlet: VerletList, n_evolutions: int):
     dt_evolution = sim.t_max if n_evolutions < 1 else sim.t_max / (n_evolutions - 1)
 
     for t in np.arange(sim.dt, sim.t_max + sim.dt, sim.dt):
-        print(t)
+        print("{:6.2f}%".format(t / (sim.t_max + sim.dt) * 100))
 
         updated_particles = apply_diffusion_reaction(_particles, _verlet)
         apply_periodic_boundary_conditions(updated_particles, outer_index_pairs)
