@@ -85,4 +85,4 @@ if __name__ == "__main__":
     ax.scatter(x_coords3, y_coords3, s=10, c="r", label="Verlet neighbours")
 
     fig.legend()
-    fig.show()
+    plt.show()

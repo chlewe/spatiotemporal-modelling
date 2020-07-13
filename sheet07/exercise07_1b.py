@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import sys
@@ -95,4 +96,4 @@ if __name__ == "__main__":
                    zlabels=("u", "u", "u", "u", "v", "v", "v", "v"),
                    titles=("t=0", "t=1/3t_max", "t=2/3t_max", "t=t_max",
                            "t=0", "t=1/3t_max", "t=2/3t_max", "t=t_max"))
-    fig.show()
+    plt.show()

@@ -117,8 +117,9 @@ def concentration_plot():
     ax.plot(fine_x, exact_u, color="red", label="Exact concentration")
     ax.scatter(pse_x_coords, pse_u, marker="o", label="PSE: Predicted concentration")
     ax.scatter(rw_x_coords, rw_u, marker="+", s=200, label="RW: Predicted concentration")
+
     fig.legend()
-    fig.show()
+    plt.show()
 
 
 def convergence_plot():
@@ -155,8 +156,9 @@ def convergence_plot():
     ax.plot(n_coords, rw_linf_coords, label="RW: Linf norm")
     ax.plot(n_coords, pse_l2_coords, label="PSE: L2 norm")
     ax.plot(n_coords, pse_linf_coords, label="PSE: Linf norm")
+
     fig.legend()
-    fig.show()
+    plt.show()
 
 
 if __name__ == "__main__":

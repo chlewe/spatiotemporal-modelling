@@ -82,7 +82,7 @@ def second_benchmark():
     print_activated_bacteria(particle_evolution)
 
     fig = plot_summed_ahl(particle_evolution)
-    fig.show()
+    plt.show()
 
 
 def third_benchmark():
@@ -97,7 +97,7 @@ def third_benchmark():
                         xlabel="x",
                         ylabel="y",
                         title="$u_e$ concentration field at t={}".format(particle_evolution[-1][0]))
-    fig.show()
+    plt.show()
 
 
 if __name__ == "__main__":

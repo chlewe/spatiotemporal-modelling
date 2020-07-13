@@ -1,4 +1,5 @@
 import math
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import sys
@@ -92,4 +93,4 @@ if __name__ == "__main__":
                    zlabels=("u", "u", "u", "u"),
                    titles=("t={}".format(t_coords[0]), "t={}".format(t_coords[1]),
                            "t={}".format(t_coords[2]), "t={}".format(t_coords[3])))
-    fig.show()
+    plt.show()

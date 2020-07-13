@@ -54,5 +54,6 @@ if __name__ == "__main__":
     ax.plot(t_values, v_values, label="v")
     ax.set_xlabel("t")
     ax.set_ylabel("concentration")
+
     fig.legend()
-    fig.show()
+    plt.show()

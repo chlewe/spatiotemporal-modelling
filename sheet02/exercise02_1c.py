@@ -55,9 +55,9 @@ if __name__ == "__main__":
 
     for dt in np.arange(0.25, 1.5, 0.25):
         x_coords, t_coords = explicit_euler(x_0, dt, t_max, f)
-        plt.plot(t_coords, x_coords, label="{}".format(dt))
+        ax.plot(t_coords, x_coords, label="{}".format(dt))
 
     ax.set_xlabel("t")
     ax.set_ylabel("x")
     fig.legend()
-    fig.show()
+    plt.show()

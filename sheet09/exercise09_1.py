@@ -1,4 +1,5 @@
 import math
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import sys
@@ -115,4 +116,4 @@ if __name__ == "__main__":
                         xlabel="x + {}".format(-sim.domain_lower_bound),
                         ylabel="y + {}".format(-sim.domain_lower_bound),
                         title="$u_e$ concentration field at t={}".format(particle_evolution[-1][0]))
-    fig.show()
+    plt.show()
